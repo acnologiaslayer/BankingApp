@@ -12,8 +12,14 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 
 ```sh
 javac -d out $(find src -name "*.java")
-java -cp out com.bank.Main
+java -cp out com.bank.Main            # terminal UI
+java -cp out com.bank.gui.SwingMain   # Swing GUI (this branch)
 ```
+
+The Swing GUI (`com.bank.gui`) shows all accounts in a table and offers
+the same operations (open account, deposit, withdraw, transfer, history,
+interest) through dialogs. It reuses the exact same `BankService` and
+`FileBankRepository` as the terminal UI — only the presentation differs.
 
 Data is stored in a `data/` directory (created automatically on first run).
 Each file starts with a header line naming the columns:
