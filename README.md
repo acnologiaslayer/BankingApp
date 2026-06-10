@@ -5,8 +5,11 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 
 ## How to run
 
-**IntelliJ IDEA:** open the `BankingApp` folder as a project, then run
-`com.bank.Main`.
+**IntelliJ IDEA:** open the `BankingApp` folder as a project and let it
+import the Maven module (right-click `pom.xml` → *Add as Maven Project* /
+*Reload Project* if the `io.qt` imports show red). Then run
+`com.bank.gui.QtMain` for the Qt GUI, or `com.bank.Main` for the
+terminal UI.
 
 **Command line:**
 
