@@ -11,9 +11,22 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 **Command line:**
 
 ```sh
-javac -d out $(find src -name "*.java")
+# terminal UI (no dependencies)
+javac -d out $(find src -name "*.java" -not -path "*/gui/*")
 java -cp out com.bank.Main
+
+# Qt GUI (this branch) — needs Qt 6.4 libraries installed
+# (Ubuntu: sudo apt install qt6-base-dev)
+mvn compile exec:java
 ```
+
+The Qt GUI (`com.bank.gui.QtMain`) is built with
+[Qt Jambi](https://github.com/OmixVisualization/qtjambi), the Java bindings
+for Qt 6 — Maven pulls the bindings automatically, but the native Qt 6.4
+libraries must be present on the system. It shows all accounts in a
+QTableWidget and offers the same operations (open account, deposit,
+withdraw, transfer, history, interest) through dialogs, reusing the exact
+same `BankService` and `FileBankRepository` as the terminal UI.
 
 Data is stored in a `data/` directory (created automatically on first run).
 Each file starts with a header line naming the columns:
