@@ -7,8 +7,11 @@ import com.bank.model.Transaction;
 import com.bank.repository.FileBankRepository;
 import com.bank.service.BankService;
 
+import io.qt.gui.QAction;
+import io.qt.gui.QActionGroup;
 import io.qt.widgets.QAbstractItemView;
 import io.qt.widgets.QApplication;
+import io.qt.widgets.QMenu;
 import io.qt.widgets.QComboBox;
 import io.qt.widgets.QDialog;
 import io.qt.widgets.QDialogButtonBox;
@@ -47,6 +50,7 @@ public class QtMain extends QMainWindow {
     public static void main(String[] args) {
         QApplication.initialize(args);
         try {
+            QtTheme.fromLabel(UiSettings.loadTheme("System")).apply();
             BankService bank = new BankService(new FileBankRepository(Path.of("data")));
             QtMain window = new QtMain(bank);
             window.show();
@@ -62,6 +66,7 @@ public class QtMain extends QMainWindow {
         this.bank = bank;
         setWindowTitle("Banking Application");
         resize(780, 430);
+        buildThemeMenu();
 
         accountsTable.setColumnCount(ACCOUNT_COLUMNS.size());
         accountsTable.setHorizontalHeaderLabels(ACCOUNT_COLUMNS);
@@ -85,6 +90,23 @@ public class QtMain extends QMainWindow {
         setCentralWidget(central);
 
         refreshAccounts();
+    }
+
+    private void buildThemeMenu() {
+        QMenu themeMenu = menuBar().addMenu("Theme");
+        QActionGroup group = new QActionGroup(this);
+        String saved = UiSettings.loadTheme("System");
+
+        for (QtTheme theme : QtTheme.values()) {
+            QAction action = themeMenu.addAction(theme.getLabel());
+            action.setCheckable(true);
+            action.setChecked(theme.getLabel().equals(saved));
+            group.addAction(action);
+            action.triggered.connect(() -> {
+                theme.apply();
+                UiSettings.saveTheme(theme.getLabel());
+            });
+        }
     }
 
     private QPushButton actionButton(String label, BankAction action) {

@@ -28,6 +28,41 @@ QTableWidget and offers the same operations (open account, deposit,
 withdraw, transfer, history, interest) through dialogs, reusing the exact
 same `BankService` and `FileBankRepository` as the terminal UI.
 
+## Usage guide (Qt GUI)
+
+The main window shows every account in a QTableWidget with visible column
+names (Account No, Type, Customer, Phone, Balance). Operations that act
+on an existing account (Deposit, Withdraw, Transfer, History) need a row
+**selected in the table first** — click the row, then the button.
+
+| Button | What it does |
+|---|---|
+| **Open Account** | Form dialog: choose SAVINGS or CURRENT, enter name, phone, opening balance. Savings needs at least 500.00. |
+| **Deposit** | Asks for an amount and credits the selected account. |
+| **Withdraw** | Asks for an amount. Savings can't go below 500.00; current can overdraw to −10,000.00. |
+| **Transfer** | Asks for the target account number, then the amount. |
+| **History** | Opens a dialog listing the selected account's transactions, newest first. |
+| **Apply Interest** | Credits 5% yearly interest to every savings account. |
+
+Invalid input (bad amounts, insufficient funds, unknown accounts) shows an
+error dialog — the message comes from the same custom exceptions the
+terminal UI uses.
+
+### Theming
+
+The **Theme** menu (top-left) offers three looks, applied application-wide
+(every window and dialog) through Qt stylesheets (QSS):
+
+- **System** — your platform's native Qt style (default)
+- **Dark** — dark palette
+- **Ocean** — blue-tinted light palette
+
+The stylesheets live in `QtTheme.java`; add your own theme by adding an
+enum constant with a QSS string. The selected theme is saved to
+`data/ui-settings.properties` and restored on the next start.
+
+## Data files
+
 Data is stored in a `data/` directory (created automatically on first run).
 Each file starts with a header line naming the columns:
 
