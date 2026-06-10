@@ -11,9 +11,18 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 **Command line:**
 
 ```sh
-javac -d out $(find src -name "*.java")
+# terminal UI (no dependencies)
+javac -d out $(find src -name "*.java" -not -path "*/gui/*")
 java -cp out com.bank.Main
+
+# JavaFX GUI (this branch) — Maven pulls OpenJFX automatically
+mvn javafx:run
 ```
+
+The JavaFX GUI (`com.bank.gui.FxMain`) shows all accounts in a TableView
+and offers the same operations (open account, deposit, withdraw, transfer,
+history, interest) through dialogs. It reuses the exact same `BankService`
+and `FileBankRepository` as the terminal UI — only the presentation differs.
 
 Data is stored in a `data/` directory (created automatically on first run).
 Each file starts with a header line naming the columns:
