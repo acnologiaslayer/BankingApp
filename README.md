@@ -5,8 +5,14 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 
 ## How to run
 
-**IntelliJ IDEA:** open the `BankingApp` folder as a project, then run
-`com.bank.Main`.
+**IntelliJ IDEA:** open the `BankingApp` folder as a project and let it
+import the Maven module (right-click `pom.xml` → *Add as Maven Project* /
+*Reload Project* if imports show red). Then run:
+
+- `com.bank.gui.FxLauncher` — the JavaFX GUI. Run this, **not** `FxMain`:
+  launching an `Application` subclass directly from the classpath fails
+  with *"JavaFX runtime components are missing"*.
+- `com.bank.Main` — the terminal UI.
 
 **Command line:**
 
