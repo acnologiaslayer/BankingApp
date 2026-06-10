@@ -1,0 +1,9 @@
+/* Ocean theme: a calm blue-tinted light palette. */
+.root {
+    -fx-base: #d7e5ee;
+    -fx-background: #e8f1f6;
+    -fx-control-inner-background: #ffffff;
+    -fx-accent: #1b6d96;
+    -fx-focus-color: #1b6d96;
+    -fx-default-button: #2e86ab;
+}

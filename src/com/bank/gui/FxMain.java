@@ -19,13 +19,18 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -45,6 +50,8 @@ public class FxMain extends Application {
 
     private BankService bank;
     private final TableView<Account> accountsTable = new TableView<>();
+    private FxTheme theme = FxTheme.LIGHT;
+    private Scene scene;
 
     public static void main(String[] args) {
         launch(args);
@@ -63,12 +70,35 @@ public class FxMain extends Application {
         refreshAccounts();
 
         BorderPane root = new BorderPane();
-        root.setTop(buildToolbar());
+        root.setTop(new VBox(buildMenuBar(), buildToolbar()));
         root.setCenter(accountsTable);
 
+        theme = FxTheme.fromLabel(UiSettings.loadTheme("Light"));
+        scene = new Scene(root, 780, 430);
+        theme.apply(scene);
+
         stage.setTitle("Banking Application");
-        stage.setScene(new Scene(root, 780, 430));
+        stage.setScene(scene);
         stage.show();
+    }
+
+    private MenuBar buildMenuBar() {
+        Menu themeMenu = new Menu("Theme");
+        ToggleGroup group = new ToggleGroup();
+        String saved = UiSettings.loadTheme("Light");
+
+        for (FxTheme candidate : FxTheme.values()) {
+            RadioMenuItem item = new RadioMenuItem(candidate.getLabel());
+            item.setToggleGroup(group);
+            item.setSelected(candidate.getLabel().equals(saved));
+            item.setOnAction(e -> {
+                theme = candidate;
+                theme.apply(scene);
+                UiSettings.saveTheme(theme.getLabel());
+            });
+            themeMenu.getItems().add(item);
+        }
+        return new MenuBar(themeMenu);
     }
 
     private void buildAccountColumns() {
@@ -146,6 +176,7 @@ public class FxMain extends Application {
         dialog.setTitle("Open Account");
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        theme.apply(dialog.getDialogPane());
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isEmpty() || result.get() != ButtonType.OK) {
@@ -177,6 +208,7 @@ public class FxMain extends Application {
         String from = selectedAccountNumber();
         TextInputDialog toDialog = new TextInputDialog();
         toDialog.setHeaderText("Transfer from " + from + " to account:");
+        theme.apply(toDialog.getDialogPane());
         Optional<String> to = toDialog.showAndWait();
         if (to.isEmpty()) {
             return;
@@ -212,7 +244,9 @@ public class FxMain extends Application {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("History of " + number);
-        dialog.setScene(new Scene(new BorderPane(table), 580, 340));
+        Scene historyScene = new Scene(new BorderPane(table), 580, 340);
+        theme.apply(historyScene);
+        dialog.setScene(historyScene);
         dialog.showAndWait();
     }
 
@@ -239,6 +273,7 @@ public class FxMain extends Application {
     private double promptAmount(String message) throws BankException {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setHeaderText(message);
+        theme.apply(dialog.getDialogPane());
         Optional<String> input = dialog.showAndWait();
         if (input.isEmpty()) {
             throw new BankException("Operation cancelled.");
@@ -255,10 +290,14 @@ public class FxMain extends Application {
     }
 
     private void showError(String message) {
-        new Alert(Alert.AlertType.ERROR, message).showAndWait();
+        Alert alert = new Alert(Alert.AlertType.ERROR, message);
+        theme.apply(alert.getDialogPane());
+        alert.showAndWait();
     }
 
     private void info(String message) {
-        new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
+        theme.apply(alert.getDialogPane());
+        alert.showAndWait();
     }
 }

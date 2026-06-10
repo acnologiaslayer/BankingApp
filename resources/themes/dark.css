@@ -1,0 +1,9 @@
+/* Dark theme: overrides the Modena default palette. */
+.root {
+    -fx-base: #3b3f44;
+    -fx-background: #2b2e33;
+    -fx-control-inner-background: #34383d;
+    -fx-accent: #4d78cc;
+    -fx-focus-color: #4d78cc;
+    -fx-selection-bar-non-focused: #50555c;
+}
