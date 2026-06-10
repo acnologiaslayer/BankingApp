@@ -18,6 +18,11 @@ public class SwingMain {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             try {
+                SwingTheme.fromLabel(UiSettings.loadTheme("System")).apply();
+            } catch (Exception ignored) {
+                // fall back to the JVM default Look&Feel
+            }
+            try {
                 BankRepository repository = new FileBankRepository(Path.of("data"));
                 BankService bank = new BankService(repository);
                 new BankFrame(bank).setVisible(true);

@@ -21,6 +21,40 @@ the same operations (open account, deposit, withdraw, transfer, history,
 interest) through dialogs. It reuses the exact same `BankService` and
 `FileBankRepository` as the terminal UI — only the presentation differs.
 
+## Usage guide (Swing GUI)
+
+The main window shows every account in a table with visible column names
+(Account No, Type, Customer, Phone, Balance). Operations that act on an
+existing account (Deposit, Withdraw, Transfer, History) need a row
+**selected in the table first** — click the row, then the button.
+
+| Button | What it does |
+|---|---|
+| **Open Account** | Form dialog: choose SAVINGS or CURRENT, enter name, phone, opening balance. Savings needs at least 500.00. |
+| **Deposit** | Asks for an amount and credits the selected account. |
+| **Withdraw** | Asks for an amount. Savings can't go below 500.00; current can overdraw to −10,000.00. |
+| **Transfer** | Asks for the target account number, then the amount. |
+| **History** | Opens a dialog listing the selected account's transactions, newest first. |
+| **Apply Interest** | Credits 5% yearly interest to every savings account. |
+
+Invalid input (bad amounts, insufficient funds, unknown accounts) shows an
+error dialog — the message comes from the same custom exceptions the
+terminal UI uses.
+
+### Theming
+
+The **Theme** menu (top-left) offers four looks:
+
+- **System** — your OS native Look&Feel (default)
+- **Metal** — classic cross-platform Swing
+- **Nimbus** — modern light theme
+- **Nimbus Dark** — Nimbus with a dark colour palette
+
+The theme switches live and your choice is saved to
+`data/ui-settings.properties`, so it is restored on the next start.
+
+## Data files
+
 Data is stored in a `data/` directory (created automatically on first run).
 Each file starts with a header line naming the columns:
 

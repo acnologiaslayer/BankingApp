@@ -6,17 +6,22 @@ import com.bank.model.Transaction;
 import com.bank.service.BankService;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -55,6 +60,7 @@ public class BankFrame extends JFrame {
         accountsTable = new JTable(accountsModel);
         accountsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+        setJMenuBar(buildMenuBar());
         setLayout(new BorderLayout(8, 8));
         add(buildToolbar(), BorderLayout.NORTH);
         add(new JScrollPane(accountsTable), BorderLayout.CENTER);
@@ -64,6 +70,35 @@ public class BankFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(760, 420);
         setLocationRelativeTo(null);
+    }
+
+    private JMenuBar buildMenuBar() {
+        JMenu themeMenu = new JMenu("Theme");
+        ButtonGroup group = new ButtonGroup();
+        String saved = UiSettings.loadTheme("System");
+
+        for (SwingTheme theme : SwingTheme.values()) {
+            JRadioButtonMenuItem item =
+                    new JRadioButtonMenuItem(theme.getLabel(), theme.getLabel().equals(saved));
+            item.addActionListener(e -> switchTheme(theme));
+            group.add(item);
+            themeMenu.add(item);
+        }
+
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(themeMenu);
+        return menuBar;
+    }
+
+    private void switchTheme(SwingTheme theme) {
+        try {
+            theme.apply();
+            SwingUtilities.updateComponentTreeUI(this);
+            UiSettings.saveTheme(theme.getLabel());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "Could not switch theme", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel buildToolbar() {
