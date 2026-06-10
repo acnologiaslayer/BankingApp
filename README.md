@@ -5,9 +5,14 @@ built as an IntelliJ IDEA project for MITM311 — Advanced OOP.
 
 ## How to run
 
-**IntelliJ IDEA:** open the `BankingApp` folder as a project, then run
-`com.bank.gui.SwingMain` for the GUI or `com.bank.Main` for the terminal
-UI. No dependencies needed — Swing ships with the JDK.
+**IntelliJ IDEA:** open the `BankingApp` folder as a project (reload the
+Maven project if prompted), then run `com.bank.gui.SwingMain` for the GUI
+or `com.bank.Main` for the terminal UI. No dependencies needed — Swing
+ships with the JDK.
+
+**After switching branches** in a running IDE, do **Maven → Reload
+Project** and **Build → Rebuild Project** once, so the build output
+matches the branch you are on.
 
 **Command line:**
 
