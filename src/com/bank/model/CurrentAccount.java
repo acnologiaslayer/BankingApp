@@ -5,16 +5,20 @@ package com.bank.model;
  */
 public class CurrentAccount extends Account {
 
-    public static final double OVERDRAFT_LIMIT = 10_000.0;
+    public static final double overdraftLimit = 10_000.0;
 
-    public CurrentAccount(String accountNumber, Customer owner, double openingBalance) {
-        super(accountNumber, owner, openingBalance);
+//    public CurrentAccount(String accountNumber, Customer owner, double openingBalance) {
+//        super(accountNumber, owner, openingBalance);
+//    }
+
+    public CurrentAccount(String accountNumber, String accountHolderName, double openingBalance) {
+        super(accountNumber, accountHolderName, openingBalance);
     }
 
     /** A current account may go negative down to the overdraft limit. */
     @Override
     public double withdrawableBalance() {
-        return getBalance() + OVERDRAFT_LIMIT;
+        return getBalance() + overdraftLimit;
     }
 
     @Override

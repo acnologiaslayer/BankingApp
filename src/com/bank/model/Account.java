@@ -5,7 +5,6 @@ import com.bank.exception.InvalidAmountException;
 
 /**
  * Abstract base of every account type.
- *
  * Demonstrates:
  *  - Abstraction:   withdrawal rules are deferred to subclasses.
  *  - Encapsulation: balance can only change through deposit/withdraw.
@@ -15,12 +14,14 @@ import com.bank.exception.InvalidAmountException;
 public abstract class Account {
 
     private final String accountNumber;
-    private final Customer owner;
+//    private final Customer accountHolderName;
+    private final String accountHolderName;
     private double balance;
 
-    protected Account(String accountNumber, Customer owner, double openingBalance) {
+//    protected Account(String accountNumber, Customer owner, double openingBalance) {
+    protected Account(String accountNumber, String owner, double openingBalance) {
         this.accountNumber = accountNumber;
-        this.owner = owner;
+        this.accountHolderName = owner;
         this.balance = openingBalance;
     }
 
@@ -28,8 +29,16 @@ public abstract class Account {
         return accountNumber;
     }
 
-    public Customer getOwner() {
-        return owner;
+//    public Customer getOwner() {
+//        return accountHolderName;
+//    }
+
+//    public String getOwner() {
+//        return accountHolderName;
+//    }
+
+    public String getAccountHolderName() {
+        return accountHolderName;
     }
 
     public double getBalance() {
@@ -50,11 +59,6 @@ public abstract class Account {
             throw new InsufficientFundsException(accountNumber, amount, withdrawableBalance());
         }
         balance -= amount;
-    }
-
-    /** Lets subclasses adjust the balance for rules like interest. */
-    protected void credit(double amount) {
-        balance += amount;
     }
 
     private void validateAmount(double amount) throws InvalidAmountException {
@@ -78,6 +82,6 @@ public abstract class Account {
     @Override
     public String toString() {
         return String.format("%-10s | %-8s | %-28s | %12.2f",
-                accountNumber, getType(), owner, balance);
+                accountNumber, getType(), accountHolderName, balance);
     }
 }
