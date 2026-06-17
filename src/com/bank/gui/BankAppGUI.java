@@ -22,17 +22,15 @@ import java.util.List;
  *  - builds the layout in the constructor,
  *  - wires buttons with anonymous ActionListeners,
  *  - keeps all business logic in the service layer (BankOperations).
+ *
+ * Each action opens its own modal pop-up form (FormDialog). A Theme menu
+ * lets the user switch the Swing Look&Feel at runtime.
  */
 public class BankAppGUI extends JFrame {
 
-    private final BankOperations bank;
+    private static final String[] ACCOUNT_TYPES = {"SAVINGS", "CURRENT"};
 
-    // form fields shared by the action panels
-    private JComboBox<String> typeField;
-    private JTextField nameField;
-    private JTextField amountField;
-    private JTextField accountField;
-    private JTextField targetAccountField;
+    private final BankOperations bank;
 
     private JTable accountTable;
     private DefaultTableModel tableModel;
@@ -42,13 +40,14 @@ public class BankAppGUI extends JFrame {
         this.bank = bank;
 
         setTitle("Amar Bank - Banking Application");
-        setSize(820, 560);
+        setSize(760, 520);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
+        setJMenuBar(buildMenuBar());
         add(buildHeader(), BorderLayout.NORTH);
-        add(buildFormPanel(), BorderLayout.WEST);
+        add(buildToolbar(), BorderLayout.WEST);
         add(buildTablePanel(), BorderLayout.CENTER);
         add(buildStatusBar(), BorderLayout.SOUTH);
 
@@ -57,6 +56,28 @@ public class BankAppGUI extends JFrame {
 
     // ---------- layout builders ----------
 
+    private JMenuBar buildMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu themeMenu = new JMenu("Theme");
+        ButtonGroup group = new ButtonGroup();
+        for (SwingTheme theme : SwingTheme.values()) {
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(theme.getLabel());
+            if (theme == SwingTheme.SYSTEM) {
+                item.setSelected(true);
+            }
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    applyTheme(theme);
+                }
+            });
+            group.add(item);
+            themeMenu.add(item);
+        }
+        menuBar.add(themeMenu);
+        return menuBar;
+    }
+
     private JComponent buildHeader() {
         JLabel title = new JLabel("AMAR BANK", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 24));
@@ -64,49 +85,37 @@ public class BankAppGUI extends JFrame {
         return title;
     }
 
-    private JComponent buildFormPanel() {
+    private JComponent buildToolbar() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
-        typeField = new JComboBox<>(new String[]{"SAVINGS", "CURRENT"});
-        nameField = new JTextField(14);
-        amountField = new JTextField(14);
-        accountField = new JTextField(14);
-        targetAccountField = new JTextField(14);
-
-        panel.add(labelled("Account type:", typeField));
-        panel.add(labelled("Customer name:", nameField));
-        panel.add(labelled("Account number:", accountField));
-        panel.add(labelled("Target account (transfer):", targetAccountField));
-        panel.add(labelled("Amount / opening balance:", amountField));
-        panel.add(Box.createVerticalStrut(10));
-
-        panel.add(actionButton("Open Account", new ActionListener() {
+        panel.add(actionButton("Open Account...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 openAccount();
             }
         }));
-        panel.add(actionButton("Deposit", new ActionListener() {
+        panel.add(actionButton("Deposit...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 deposit();
             }
         }));
-        panel.add(actionButton("Withdraw", new ActionListener() {
+        panel.add(actionButton("Withdraw...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 withdraw();
             }
         }));
-        panel.add(actionButton("Transfer", new ActionListener() {
+        panel.add(actionButton("Transfer...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 transfer();
             }
         }));
-        panel.add(actionButton("Check Balance", new ActionListener() {
+        panel.add(actionButton("Check Balance...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 checkBalance();
             }
         }));
+        panel.add(Box.createVerticalStrut(10));
         panel.add(actionButton("Refresh List", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 refreshTable();
@@ -140,38 +149,46 @@ public class BankAppGUI extends JFrame {
         return statusLabel;
     }
 
-    // ---------- small UI helpers ----------
-
-    private JPanel labelled(String text, JComponent field) {
-        JPanel row = new JPanel(new BorderLayout(6, 0));
-        row.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
-        row.add(new JLabel(text), BorderLayout.NORTH);
-        row.add(field, BorderLayout.CENTER);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
-        return row;
-    }
-
     private JButton actionButton(String text, ActionListener listener) {
         JButton button = new JButton(text);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         button.addActionListener(listener);
         return button;
     }
 
-    // ---------- actions (delegate to the service layer) ----------
+    // ---------- theme ----------
+
+    private void applyTheme(SwingTheme theme) {
+        try {
+            theme.apply();
+            SwingUtilities.updateComponentTreeUI(this);
+            pack();
+            setSize(760, 520);
+            setStatus("Theme changed to " + theme.getLabel() + ".");
+        } catch (Exception e) {
+            showError("Could not apply theme: " + e.getMessage());
+        }
+    }
+
+    // ---------- actions (each opens a pop-up form) ----------
 
     private void openAccount() {
+        FormDialog form = new FormDialog(this, "Open Account");
+        JComboBox<String> type = form.addComboBox("Account type:", ACCOUNT_TYPES);
+        JTextField name = form.addTextField("Customer name:");
+        JTextField opening = form.addTextField("Opening balance:");
+        if (!form.showDialog()) {
+            return;
+        }
         try {
-            String type = (String) typeField.getSelectedItem();
-            String name = nameField.getText().trim();
-            if (name.isEmpty()) {
+            String customer = name.getText().trim();
+            if (customer.isEmpty()) {
                 throw new BankException("Customer name cannot be empty.");
             }
-            double opening = parseAmount(amountField.getText());
-            Account account = bank.openAccount(type, name, opening);
+            double balance = parseAmount(opening.getText());
+            Account account = bank.openAccount((String) type.getSelectedItem(), customer, balance);
             refreshTable();
-            clearInputs();
             setStatus("Account created: " + account.getAccountNumber());
         } catch (BankException | NumberFormatException e) {
             showError(e.getMessage());
@@ -179,54 +196,82 @@ public class BankAppGUI extends JFrame {
     }
 
     private void deposit() {
+        FormDialog form = new FormDialog(this, "Deposit");
+        JTextField account = form.addTextField("Account number:");
+        JTextField amount = form.addTextField("Amount to deposit:");
+        prefillSelectedAccount(account);
+        if (!form.showDialog()) {
+            return;
+        }
         try {
-            String number = requireAccountNumber();
-            double amount = parseAmount(amountField.getText());
-            bank.deposit(number, amount);
+            String number = requireText(account, "Please enter an account number.");
+            double value = parseAmount(amount.getText());
+            bank.deposit(number, value);
             refreshTable();
             setStatus(String.format("Deposited %.2f. New balance: %.2f",
-                    amount, bank.requireAccount(number).getBalance()));
+                    value, bank.requireAccount(number).getBalance()));
         } catch (BankException | NumberFormatException e) {
             showError(e.getMessage());
         }
     }
 
     private void withdraw() {
+        FormDialog form = new FormDialog(this, "Withdraw");
+        JTextField account = form.addTextField("Account number:");
+        JTextField amount = form.addTextField("Amount to withdraw:");
+        prefillSelectedAccount(account);
+        if (!form.showDialog()) {
+            return;
+        }
         try {
-            String number = requireAccountNumber();
-            double amount = parseAmount(amountField.getText());
-            bank.withdraw(number, amount);
+            String number = requireText(account, "Please enter an account number.");
+            double value = parseAmount(amount.getText());
+            bank.withdraw(number, value);
             refreshTable();
             setStatus(String.format("Withdrew %.2f. New balance: %.2f",
-                    amount, bank.requireAccount(number).getBalance()));
+                    value, bank.requireAccount(number).getBalance()));
         } catch (BankException | NumberFormatException e) {
             showError(e.getMessage());
         }
     }
 
     private void transfer() {
+        FormDialog form = new FormDialog(this, "Transfer");
+        JTextField from = form.addTextField("From account:");
+        JTextField to = form.addTextField("To account:");
+        JTextField amount = form.addTextField("Amount to transfer:");
+        prefillSelectedAccount(from);
+        if (!form.showDialog()) {
+            return;
+        }
         try {
-            String from = requireAccountNumber();
-            String to = targetAccountField.getText().trim();
-            if (to.isEmpty()) {
-                throw new BankException("Target account number is required for a transfer.");
-            }
-            double amount = parseAmount(amountField.getText());
-            bank.transfer(from, to, amount);
+            String fromNumber = requireText(from, "Please enter the source account.");
+            String toNumber = requireText(to, "Please enter the target account.");
+            double value = parseAmount(amount.getText());
+            bank.transfer(fromNumber, toNumber, value);
             refreshTable();
-            setStatus(String.format("Transferred %.2f from %s to %s.", amount, from, to));
+            setStatus(String.format("Transferred %.2f from %s to %s.", value, fromNumber, toNumber));
         } catch (BankException | NumberFormatException e) {
             showError(e.getMessage());
         }
     }
 
     private void checkBalance() {
+        FormDialog form = new FormDialog(this, "Check Balance");
+        JTextField account = form.addTextField("Account number:");
+        prefillSelectedAccount(account);
+        if (!form.showDialog()) {
+            return;
+        }
         try {
-            String number = requireAccountNumber();
-            Account account = bank.requireAccount(number);
-            setStatus(String.format("%s (%s): balance %.2f, withdrawable %.2f",
-                    account.getAccountNumber(), account.getType(),
-                    account.getBalance(), account.withdrawableBalance()));
+            String number = requireText(account, "Please enter an account number.");
+            Account acc = bank.requireAccount(number);
+            String message = String.format(
+                    "Account: %s%nType: %s%nCustomer: %s%nBalance: %.2f%nWithdrawable now: %.2f",
+                    acc.getAccountNumber(), acc.getType(), acc.getAccountHolderName(),
+                    acc.getBalance(), acc.withdrawableBalance());
+            JOptionPane.showMessageDialog(this, message, "Balance", JOptionPane.INFORMATION_MESSAGE);
+            setStatus(String.format("%s balance: %.2f", acc.getAccountNumber(), acc.getBalance()));
         } catch (BankException e) {
             showError(e.getMessage());
         }
@@ -254,12 +299,20 @@ public class BankAppGUI extends JFrame {
                 : String.format("Overdraft %.2f", account.withdrawableBalance() - account.getBalance());
     }
 
-    private String requireAccountNumber() throws BankException {
-        String number = accountField.getText().trim();
-        if (number.isEmpty()) {
-            throw new BankException("Please enter an account number.");
+    /** Pre-fills a field with the account number selected in the table, if any. */
+    private void prefillSelectedAccount(JTextField field) {
+        int row = accountTable.getSelectedRow();
+        if (row >= 0) {
+            field.setText(String.valueOf(tableModel.getValueAt(row, 0)));
         }
-        return number;
+    }
+
+    private String requireText(JTextField field, String error) throws BankException {
+        String value = field.getText().trim();
+        if (value.isEmpty()) {
+            throw new BankException(error);
+        }
+        return value;
     }
 
     private double parseAmount(String text) {
@@ -267,11 +320,6 @@ public class BankAppGUI extends JFrame {
             throw new NumberFormatException("Please enter an amount.");
         }
         return Double.parseDouble(text.trim());
-    }
-
-    private void clearInputs() {
-        nameField.setText("");
-        amountField.setText("");
     }
 
     private void setStatus(String message) {
