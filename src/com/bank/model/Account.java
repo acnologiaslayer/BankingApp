@@ -75,8 +75,8 @@ public abstract class Account {
 
     /** Column names aligned with toString(), for table displays. */
     public static String tableHeader() {
-        return String.format("%-10s | %-8s | %-28s | %12s",
-                "ACCOUNT NO", "TYPE", "CUSTOMER", "BALANCE");
+        return String.format("%-10s | %-8s | %-28s | %12s | %12s",
+                "ACCOUNT NO", "TYPE", "CUSTOMER", "BALANCE", "SPECIAL ATTRIBUTE");
     }
 
     @Override

@@ -25,4 +25,10 @@ public class CurrentAccount extends Account {
     public String getType() {
         return "CURRENT";
     }
+
+    @Override
+    public String toString() {
+        return String.format("%-10s | %-8s | %-28s | %12.2f | %-12.2f",
+                getAccountNumber(), getType(), getAccountHolderName(), getBalance(), overdraftLimit);
+    }
 }
