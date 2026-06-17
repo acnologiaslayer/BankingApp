@@ -351,15 +351,18 @@ public class BankAppGUI extends JFrame {
     }
 
     private void deposit() {
+        if (ensureAccountsExist()) {
+            return;
+        }
         FormDialog form = new FormDialog(this, "Deposit");
-        JTextField account = form.addTextField("Account number:");
+        JComboBox<String> account = form.addComboBox("Account:", accountChoices());
         JTextField amount = form.addTextField("Amount to deposit:");
-        prefillSelectedAccount(account);
+        preselectAccount(account);
         if (!form.showDialog()) {
             return;
         }
         try {
-            String number = requireText(account, "Please enter an account number.");
+            String number = accountNumberOf(account);
             double value = parseAmount(amount.getText());
             bank.deposit(number, value);
             refreshTable();
@@ -371,15 +374,18 @@ public class BankAppGUI extends JFrame {
     }
 
     private void withdraw() {
+        if (ensureAccountsExist()) {
+            return;
+        }
         FormDialog form = new FormDialog(this, "Withdraw");
-        JTextField account = form.addTextField("Account number:");
+        JComboBox<String> account = form.addComboBox("Account:", accountChoices());
         JTextField amount = form.addTextField("Amount to withdraw:");
-        prefillSelectedAccount(account);
+        preselectAccount(account);
         if (!form.showDialog()) {
             return;
         }
         try {
-            String number = requireText(account, "Please enter an account number.");
+            String number = accountNumberOf(account);
             double value = parseAmount(amount.getText());
             bank.withdraw(number, value);
             refreshTable();
@@ -391,17 +397,21 @@ public class BankAppGUI extends JFrame {
     }
 
     private void transfer() {
+        if (bank.listAccounts().size() < 2) {
+            showError("You need at least two accounts to make a transfer.");
+            return;
+        }
         FormDialog form = new FormDialog(this, "Transfer");
-        JTextField from = form.addTextField("From account:");
-        JTextField to = form.addTextField("To account:");
+        JComboBox<String> from = form.addComboBox("From account:", accountChoices());
+        JComboBox<String> to = form.addComboBox("To account:", accountChoices());
         JTextField amount = form.addTextField("Amount to transfer:");
-        prefillSelectedAccount(from);
+        preselectAccount(from);
         if (!form.showDialog()) {
             return;
         }
         try {
-            String fromNumber = requireText(from, "Please enter the source account.");
-            String toNumber = requireText(to, "Please enter the target account.");
+            String fromNumber = accountNumberOf(from);
+            String toNumber = accountNumberOf(to);
             double value = parseAmount(amount.getText());
             bank.transfer(fromNumber, toNumber, value);
             refreshTable();
@@ -412,14 +422,17 @@ public class BankAppGUI extends JFrame {
     }
 
     private void checkBalance() {
+        if (ensureAccountsExist()) {
+            return;
+        }
         FormDialog form = new FormDialog(this, "Check Balance");
-        JTextField account = form.addTextField("Account number:");
-        prefillSelectedAccount(account);
+        JComboBox<String> account = form.addComboBox("Account:", accountChoices());
+        preselectAccount(account);
         if (!form.showDialog()) {
             return;
         }
         try {
-            String number = requireText(account, "Please enter an account number.");
+            String number = accountNumberOf(account);
             Account acc = bank.requireAccount(number);
             String message = String.format(
                     "Account: %s%nType: %s%nCustomer: %s%nBalance: %.2f%nWithdrawable now: %.2f",
@@ -454,20 +467,48 @@ public class BankAppGUI extends JFrame {
                 : String.format("Overdraft %.2f", account.withdrawableBalance() - account.getBalance());
     }
 
-    /** Pre-fills a field with the account number selected in the table, if any. */
-    private void prefillSelectedAccount(JTextField field) {
+    /** Builds the labelled choices ("AC00001 - Alice (SAVINGS)") for an account dropdown. */
+    private String[] accountChoices() {
+        List<Account> accounts = bank.listAccounts();
+        String[] choices = new String[accounts.size()];
+        for (int i = 0; i < accounts.size(); i++) {
+            Account a = accounts.get(i);
+            choices[i] = String.format("%s - %s (%s)",
+                    a.getAccountNumber(), a.getAccountHolderName(), a.getType());
+        }
+        return choices;
+    }
+
+    /** Extracts the account number from a "AC00001 - Name (TYPE)" dropdown item. */
+    private String accountNumberOf(JComboBox<String> combo) {
+        Object selected = combo.getSelectedItem();
+        String text = selected == null ? "" : selected.toString();
+        int dash = text.indexOf(" - ");
+        return (dash >= 0 ? text.substring(0, dash) : text).trim();
+    }
+
+    /** Selects the table-highlighted account in the dropdown, if one is highlighted. */
+    private void preselectAccount(JComboBox<String> combo) {
         int row = accountTable.getSelectedRow();
-        if (row >= 0) {
-            field.setText(String.valueOf(tableModel.getValueAt(row, 0)));
+        if (row < 0) {
+            return;
+        }
+        String number = String.valueOf(tableModel.getValueAt(row, 0));
+        for (int i = 0; i < combo.getItemCount(); i++) {
+            if (combo.getItemAt(i).startsWith(number + " ")) {
+                combo.setSelectedIndex(i);
+                return;
+            }
         }
     }
 
-    private String requireText(JTextField field, String error) throws BankException {
-        String value = field.getText().trim();
-        if (value.isEmpty()) {
-            throw new BankException(error);
+    /** Warns and returns true when there are no accounts to act on yet. */
+    private boolean ensureAccountsExist() {
+        if (bank.listAccounts().isEmpty()) {
+            showError("There are no accounts yet. Please open an account first.");
+            return true;
         }
-        return value;
+        return false;
     }
 
     private double parseAmount(String text) {
