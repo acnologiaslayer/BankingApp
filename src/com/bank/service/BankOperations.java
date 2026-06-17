@@ -5,6 +5,7 @@ import com.bank.model.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BankOperations {
@@ -42,20 +43,20 @@ public class BankOperations {
         };
 
         accounts.put(number, account);
-        bankManagement.saveAccounts(new ArrayList<>(accounts.values()));
+        bankManagement.saveAccount(account);
         return account;
     }
 
     public void deposit(String accountNumber, double amount) throws BankException {
         Account account = requireAccount(accountNumber);
         account.deposit(amount);
-        bankManagement.saveAccounts(new ArrayList<>(accounts.values()));
+        bankManagement.saveAccount(account);
     }
 
     public void withdraw(String accountNumber, double amount) throws BankException {
         Account account = requireAccount(accountNumber);
         account.withdraw(amount);
-        bankManagement.saveAccounts(new ArrayList<>(accounts.values()));
+        bankManagement.saveAccount(account);
     }
 
     /** Moves money between two accounts atomically (in-memory). */
@@ -70,7 +71,8 @@ public class BankOperations {
         from.withdraw(amount); // validates amount and funds first
         to.deposit(amount);
 
-        bankManagement.saveAccounts(new ArrayList<>(accounts.values()));
+        bankManagement.saveAccount(from);
+        bankManagement.saveAccount(to);
     }
 
     public Account requireAccount(String accountNumber) throws AccountNotFoundException {
@@ -79,6 +81,11 @@ public class BankOperations {
             throw new AccountNotFoundException(accountNumber);
         }
         return account;
+    }
+
+    /** Returns every account, in creation order, for display purposes. */
+    public List<Account> listAccounts() {
+        return new ArrayList<>(accounts.values());
     }
 
     // ---------- helpers ----------
