@@ -45,6 +45,16 @@ public class CyberpunkButtonUI extends BasicButtonUI {
     }
 
     @Override
+    protected void uninstallDefaults(AbstractButton b) {
+        super.uninstallDefaults(b);
+        // Restore the values mutated in installDefaults so the next theme's
+        // buttons paint normally (otherwise they stay transparent/borderless).
+        b.setContentAreaFilled(true);
+        b.setOpaque(true);
+        b.setBorder(null);
+    }
+
+    @Override
     public void paint(Graphics g, JComponent c) {
         AbstractButton b = (AbstractButton) c;
         ButtonModel m = b.getModel();

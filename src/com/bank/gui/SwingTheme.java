@@ -12,11 +12,36 @@ import java.awt.Color;
  */
 public enum SwingTheme {
 
-    SYSTEM("System"),
-    METAL("Metal"),
-    NIMBUS("Nimbus"),
-    NIMBUS_DARK("Nimbus Dark"),
-    CYBERPUNK("Cyberpunk");
+    SYSTEM("System", new Palette(
+            new Color(0xF0F0F0), new Color(0xE3E3E6), new Color(0x1E1E1E),
+            new Color(0x0078D7), Color.WHITE, new Color(0xD0021B))),
+    METAL("Metal", new Palette(
+            new Color(0xEEEEEE), new Color(0xD6D9DF), new Color(0x141414),
+            new Color(0x666699), Color.WHITE, new Color(0xC0392B))),
+    NIMBUS("Nimbus", new Palette(
+            new Color(0xF0F0F2), new Color(0xD6D9DF), new Color(0x282828),
+            new Color(0x39698A), Color.WHITE, new Color(0xC0392B))),
+    NIMBUS_DARK("Nimbus Dark", new Palette(
+            new Color(0x2B2B2B), new Color(0x3C3F41), new Color(0xE6E6E6),
+            new Color(0x73A4D1), new Color(0x0F0F0F), new Color(0xE74C3C))),
+    CYBERPUNK("Cyberpunk", new Palette(
+            new Color(0x0A0A18), new Color(0x1C0C30), new Color(0xE0F8FF),
+            new Color(0x00F0FF), new Color(0x08081A), new Color(0xFF2A6D)));
+
+    /**
+     * The colours used to paint the application chrome (custom title bar,
+     * status bar, panels) so the whole window matches the active theme.
+     *
+     * @param background main window background
+     * @param surface    raised surfaces (title bar, status bar, side panel)
+     * @param foreground primary text colour
+     * @param accent     highlight colour (title text, borders, hovers)
+     * @param accentText text drawn on top of the accent colour
+     * @param danger     destructive accent (e.g. the close button hover)
+     */
+    public record Palette(Color background, Color surface, Color foreground,
+                          Color accent, Color accentText, Color danger) {
+    }
 
     /** Nimbus colour keys touched by the dark/cyberpunk variants. */
     private static final String[] NIMBUS_OVERRIDE_KEYS = {
@@ -39,13 +64,19 @@ public enum SwingTheme {
     private static final Color CP_TEXT = new Color(224, 248, 255);
 
     private final String label;
+    private final Palette palette;
 
-    SwingTheme(String label) {
+    SwingTheme(String label, Palette palette) {
         this.label = label;
+        this.palette = palette;
     }
 
     public String getLabel() {
         return label;
+    }
+
+    public Palette palette() {
+        return palette;
     }
 
     public static SwingTheme fromLabel(String label) {

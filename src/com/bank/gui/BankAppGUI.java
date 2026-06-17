@@ -14,9 +14,7 @@ import java.awt.event.ActionListener;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Java Swing front-end for the banking application.
@@ -44,11 +42,21 @@ public class BankAppGUI extends JFrame {
     private static final SwingTheme DEFAULT_THEME = SwingTheme.NIMBUS;
 
     private final BankOperations bank;
-    private final Map<SwingTheme, JRadioButtonMenuItem> themeItems = new EnumMap<>(SwingTheme.class);
 
     private JTable accountTable;
     private DefaultTableModel tableModel;
     private JLabel statusLabel;
+    private JLabel titleLabel;
+
+    // custom themed chrome
+    private TitleBar titleBar;
+    private JPanel rootPanel;
+    private JPanel contentPanel;
+    private JPanel toolbarPanel;
+    private JPanel statusPanel;
+    private JScrollPane tableScroll;
+    private ThemeSelectorButton themeSelector;
+    private final java.util.List<JButton> actionButtons = new java.util.ArrayList<>();
 
     // theme state used for error recovery
     private SwingTheme currentTheme = DEFAULT_THEME;
@@ -62,18 +70,33 @@ public class BankAppGUI extends JFrame {
         installDefaultTheme();
 
         setTitle("Amar Bank - Banking Application");
-        setSize(760, 520);
+        setSize(820, 560);
+        setMinimumSize(new Dimension(640, 440));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
+        // Undecorated so we can paint the whole window (title bar + border)
+        // in the active theme instead of the native OS chrome.
+        setUndecorated(true);
 
-        setJMenuBar(buildMenuBar());
-        add(buildHeader(), BorderLayout.NORTH);
-        add(buildToolbar(), BorderLayout.WEST);
-        add(buildTablePanel(), BorderLayout.CENTER);
-        add(buildStatusBar(), BorderLayout.SOUTH);
+        rootPanel = new JPanel(new BorderLayout());
+        rootPanel.setBorder(BorderFactory.createLineBorder(currentTheme.palette().accent(), 1));
+        setContentPane(rootPanel);
+
+        titleBar = new TitleBar(this, "AMAR BANK");
+        rootPanel.add(titleBar, BorderLayout.NORTH);
+
+        contentPanel = new JPanel(new BorderLayout(10, 10));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        contentPanel.add(buildHeader(), BorderLayout.NORTH);
+        contentPanel.add(buildToolbar(), BorderLayout.WEST);
+        contentPanel.add(buildTablePanel(), BorderLayout.CENTER);
+        contentPanel.add(buildStatusBar(), BorderLayout.SOUTH);
+        rootPanel.add(contentPanel, BorderLayout.CENTER);
+
+        new WindowResizer(this); // edge/corner resize on the undecorated frame
 
         refreshTable();
+        applyChrome(currentTheme); // colour all custom components for the theme
 
         // Catch any uncaught event-thread error (e.g. a Look&Feel that fails
         // to paint) and route it through our recovery/reporting handler.
@@ -82,73 +105,52 @@ public class BankAppGUI extends JFrame {
 
     // ---------- layout builders ----------
 
-    private JMenuBar buildMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-
-        JMenu themeMenu = new JMenu("Theme");
-        ButtonGroup group = new ButtonGroup();
-        for (SwingTheme theme : SwingTheme.values()) {
-            JRadioButtonMenuItem item = new JRadioButtonMenuItem(theme.getLabel());
-            item.setSelected(theme == currentTheme);
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    applyTheme(theme);
-                }
-            });
-            group.add(item);
-            themeMenu.add(item);
-            themeItems.put(theme, item);
-        }
-        menuBar.add(themeMenu);
-        return menuBar;
-    }
-
     private JComponent buildHeader() {
-        JLabel title = new JLabel("AMAR BANK", SwingConstants.CENTER);
-        title.setFont(new Font("SansSerif", Font.BOLD, 24));
-        title.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
-        return title;
+        titleLabel = new JLabel("AMAR BANK", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
+        return titleLabel;
     }
 
     private JComponent buildToolbar() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        toolbarPanel = new JPanel();
+        toolbarPanel.setLayout(new BoxLayout(toolbarPanel, BoxLayout.Y_AXIS));
+        toolbarPanel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
 
-        panel.add(actionButton("Open Account...", new ActionListener() {
+        toolbarPanel.add(actionButton("Open Account...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 openAccount();
             }
         }));
-        panel.add(actionButton("Deposit...", new ActionListener() {
+        toolbarPanel.add(actionButton("Deposit...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 deposit();
             }
         }));
-        panel.add(actionButton("Withdraw...", new ActionListener() {
+        toolbarPanel.add(actionButton("Withdraw...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 withdraw();
             }
         }));
-        panel.add(actionButton("Transfer...", new ActionListener() {
+        toolbarPanel.add(actionButton("Transfer...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 transfer();
             }
         }));
-        panel.add(actionButton("Check Balance...", new ActionListener() {
+        toolbarPanel.add(actionButton("Check Balance...", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 checkBalance();
             }
         }));
-        panel.add(Box.createVerticalStrut(10));
-        panel.add(actionButton("Refresh List", new ActionListener() {
+        toolbarPanel.add(Box.createVerticalStrut(10));
+        toolbarPanel.add(actionButton("Refresh List", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 refreshTable();
                 setStatus("Account list refreshed.");
             }
         }));
 
-        return panel;
+        return toolbarPanel;
     }
 
     private JComponent buildTablePanel() {
@@ -163,15 +165,26 @@ public class BankAppGUI extends JFrame {
         accountTable.setRowHeight(24);
         accountTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
 
-        JScrollPane scrollPane = new JScrollPane(accountTable);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Accounts"));
-        return scrollPane;
+        tableScroll = new JScrollPane(accountTable);
+        tableScroll.setBorder(BorderFactory.createTitledBorder("Accounts"));
+        return tableScroll;
     }
 
     private JComponent buildStatusBar() {
+        statusPanel = new JPanel(new BorderLayout());
+        statusPanel.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 8));
+
         statusLabel = new JLabel("Ready.");
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        return statusLabel;
+        statusPanel.add(statusLabel, BorderLayout.CENTER);
+
+        // The theme selector lives in the bottom-right, as a palette icon.
+        themeSelector = new ThemeSelectorButton(currentTheme, this::applyTheme);
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        right.setOpaque(false);
+        right.add(themeSelector);
+        statusPanel.add(right, BorderLayout.EAST);
+
+        return statusPanel;
     }
 
     private JButton actionButton(String text, ActionListener listener) {
@@ -179,6 +192,7 @@ public class BankAppGUI extends JFrame {
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         button.addActionListener(listener);
+        actionButtons.add(button);
         return button;
     }
 
@@ -215,8 +229,8 @@ public class BankAppGUI extends JFrame {
         try {
             theme.apply();
             currentTheme = theme;
-            selectThemeItem(theme);
             SwingUtilities.updateComponentTreeUI(this);
+            applyChrome(theme);
             // Only trust the new theme once it has survived a short settling
             // period of real repaints. A broken Look&Feel throws during those
             // repaints first, so lastGoodTheme is not advanced prematurely.
@@ -225,6 +239,42 @@ public class BankAppGUI extends JFrame {
         } catch (Throwable e) {
             revertTheme(previousGood, theme, describeThrowable(e));
         }
+    }
+
+    /**
+     * Recolours every custom-painted component (title bar, window border,
+     * side panel, status bar, table, header, theme icon) to match the theme
+     * palette, so the whole window - not just the Swing widgets - is themed.
+     */
+    private void applyChrome(SwingTheme theme) {
+        SwingTheme.Palette p = theme.palette();
+
+        rootPanel.setBorder(BorderFactory.createLineBorder(p.accent(), 1));
+        rootPanel.setBackground(p.background());
+        contentPanel.setBackground(p.background());
+        titleBar.applyPalette(p);
+
+        toolbarPanel.setBackground(p.background());
+        statusPanel.setBackground(p.surface());
+        statusLabel.setForeground(p.foreground());
+
+        titleLabel.setForeground(p.accent());
+
+        accountTable.setBackground(p.background());
+        accountTable.setForeground(p.foreground());
+        accountTable.setGridColor(p.surface());
+        accountTable.getTableHeader().setBackground(p.surface());
+        accountTable.getTableHeader().setForeground(p.accent());
+        accountTable.setSelectionBackground(p.accent());
+        accountTable.setSelectionForeground(p.accentText());
+        tableScroll.getViewport().setBackground(p.background());
+        tableScroll.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(p.accent()), "Accounts", 0, 0, null, p.accent()));
+
+        themeSelector.applyPalette(p);
+        themeSelector.setSelected(theme);
+
+        repaint();
     }
 
     /** After a brief delay with no paint failures, accept the theme as safe. */
@@ -288,13 +338,13 @@ public class BankAppGUI extends JFrame {
             }
         }
         lastGoodTheme = currentTheme;
-        selectThemeItem(currentTheme);
         try {
             SwingUtilities.updateComponentTreeUI(this);
+            applyChrome(currentTheme);
         } catch (Throwable ignored) {
             // updating the tree should be safe now; ignore if not
         }
-        statusLabel.setForeground(Color.RED);
+        statusLabel.setForeground(currentTheme.palette().danger());
         statusLabel.setText("Theme '" + broken.getLabel() + "' is not supported here; reverted to "
                 + restored.getLabel() + ".");
         // Show the dialog after we have fully unwound from the failing paint
@@ -305,13 +355,6 @@ public class BankAppGUI extends JFrame {
                         + "and could not be displayed.\n\nReverted to the '" + restoredLabel
                         + "' theme.\n\nDetails: " + reason,
                 "Theme Not Available", JOptionPane.WARNING_MESSAGE));
-    }
-
-    private void selectThemeItem(SwingTheme theme) {
-        JRadioButtonMenuItem item = themeItems.get(theme);
-        if (item != null) {
-            item.setSelected(true);
-        }
     }
 
     private boolean isLookAndFeelError(Throwable error) {
@@ -531,12 +574,12 @@ public class BankAppGUI extends JFrame {
     }
 
     private void setStatus(String message) {
-        statusLabel.setForeground(new Color(0, 110, 0));
+        statusLabel.setForeground(currentTheme.palette().foreground());
         statusLabel.setText(message);
     }
 
     private void showError(String message) {
-        statusLabel.setForeground(Color.RED);
+        statusLabel.setForeground(currentTheme.palette().danger());
         statusLabel.setText("Error: " + message.replace('\n', ' '));
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
